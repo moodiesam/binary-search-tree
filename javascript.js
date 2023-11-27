@@ -1,4 +1,4 @@
-//first we need to sort the array..?
+//first we need to sort the array
 
 function mergeSort(a) {
     if (a.length < 2) {
@@ -67,6 +67,8 @@ class Tree {
         return root
     };
 
+    //insert new node into existing tree
+
     insert(value) {
         let newNode = new Node(value)
         let currentNode = this.root;
@@ -86,10 +88,66 @@ class Tree {
         }
     };
 
+    //delete node from tree
+
     delete(value) {
+        let parentNode = this.findParent(value);
+        let currentNode = this.find(value);
+
+        //if no child nodes...
+        
+        if (currentNode.leftChild === null && currentNode.rightChild === null) {
+            if (parentNode.leftChild.data === value) {
+                parentNode.leftChild = null;
+            }
+            if (parentNode.rightChild.data === value) {
+                parentNode.rightChild = null
+            }
+        };
+
+        //if 2 child nodes... !!needs work to delete root node(there will be no parent node)
+        
+        if (currentNode.leftChild !== null && currentNode.rightChild !== null) {
+            let nextHeighest = currentNode.rightChild;
+            while (nextHeighest.leftChild !== null) {
+                nextHeighest = nextHeighest.leftChild;
+            }
+            nextHeighest.leftChild = currentNode.leftChild;
+            if (currentNode.rightChild !== nextHeighest) {
+                let newParentNode = this.findParent(nextHeighest.data);
+                newParentNode.leftChild = null;
+                nextHeighest.rightChild = currentNode.rightChild;
+            }
+            if (parentNode.rightChild.data === value) {
+                parentNode.rightChild = nextHeighest;
+            } else {
+                parentNode.leftChild = nextHeighest;
+            }
+        };
+
+        //if one child node...
+
+        if (currentNode.leftChild === null || currentNode.rightChild === null) {
+            if (parentNode.rightChild === currentNode) {
+                if (currentNode.rightChild === null) {
+                    parentNode.rightChild = currentNode.leftChild;
+                } else {
+                    parentNode.rightChild = currentNode.rightChild;
+                }
+            } else {
+                if (currentNode.rightChild === null) {
+                    parentNode.leftChild = currentNode.leftChild;
+                } else {
+                    parentNode.leftChild = currentNode.rightChild;
+                }
+            }
+        };
+        
+    }
+
+    find(value) {
         let currentNode = this.root;
 
-        //first, find the right node;
         if (currentNode.data === value) return;
         while (currentNode.data !== value) {
             if (currentNode.leftChild === null || currentNode.rightChild === null) return;
@@ -99,14 +157,106 @@ class Tree {
                 currentNode = currentNode.rightChild;
             }
         }
-        console.log(currentNode);
+        return currentNode;
+    };
 
-        //if no child nodes...
+    findParent(value) {
+        if (this.root.data === value) return;
+        let parentNode = this.root;
 
+        while (parentNode.leftChild.data !== value && parentNode.rightChild.data !== value) {
+            if (parentNode.leftChild === null && parentNode.rightChild === null) return;
+            if (parentNode.data > value) {
+                parentNode = parentNode.leftChild;
+            } else {
+                parentNode = parentNode.rightChild;
+            }
+        };
+        return parentNode;
+    };
 
-        //if one child node...
+    levelOrder() {
+        if (this.root === null) return;
 
-        //if 2 child nodes...
+        let levelOrderQueue = [];
+        let currentNode = this.root;
+        let queuePosition = 0
+
+        levelOrderQueue.push(currentNode.data)
+
+        while (queuePosition < levelOrderQueue.length) {
+            if (currentNode == undefined) {
+                queuePosition++;
+                currentNode = this.find(levelOrderQueue[queuePosition]);
+            } else {
+                if (currentNode.leftChild !== null) {
+                    levelOrderQueue.push(currentNode.leftChild.data);
+                };
+                if (currentNode.rightChild !== null) {
+                    levelOrderQueue.push(currentNode.rightChild.data);
+                };
+                queuePosition++
+                currentNode = this.find(levelOrderQueue[queuePosition])
+            }
+        }
+        console.log(levelOrderQueue);
+        return levelOrderQueue;
+    };
+
+    inOrder(current = this.root, inOrderList = []) {
+        if (!current) return;
+        if (current) {
+            this.inOrder(current.leftChild, inOrderList);
+            inOrderList.push(current.data);
+            this.inOrder(current.rightChild, inOrderList);
+        }
+        return inOrderList;
+    };
+
+    preOrder(current = this.root, preOrderList = []) {
+        if (!current) return;
+        if (current) {
+            preOrderList.push(current.data);
+            this.preOrder(current.leftChild, preOrderList);
+            this.preOrder(current.rightChild, preOrderList);
+        }
+        return preOrderList;
+    }
+
+    postOrder(current = this.root, postOrderList = []) {
+        if (!current) return;
+        if (current) {
+            this.postOrder(current.leftChild, postOrderList);
+            this.postOrder(current.rightChild, postOrderList);
+            postOrderList.push(current.data);
+        }
+        return postOrderList;
+    };
+
+    height(givenNumber) {
+        let node = this.find(givenNumber);
+        if (!node) return;
+        if(node) {
+
+        }
+        console.log(node)
+    };
+
+    depth(givenNumber) {
+        let nodeDepth = -1;
+        let node = this.find(givenNumber);
+        if (!node) return;
+        if (node) {
+            while (node !== undefined) {
+                node = this.findParent(node.data)
+                nodeDepth++
+            }
+            return nodeDepth
+        }
+    };
+
+    isBalanced() {
+        //check if the tree is balanced (difference in height of left and right subtrees shouldnt be more then 1)
     }
 
     prettyPrint(node = this.root, prefix = "", isLeft = true) {
@@ -123,11 +273,11 @@ class Tree {
       };
 };
 
-let testArray = [4, 43, 19, 14, 2, 6, 9, 11, 54, 82, 23, 76, 99, 100, 101];
+let testArray = [4, 43, 19, 14, 2, 6, 8, 11, 44, 52, 54, 23, 76, 100, 101];
 
 let newTree = new Tree(testArray);
-console.log(newTree.root)
-console.log(newTree);
 newTree.prettyPrint();
-
-
+console.log(newTree.inOrder())
+newTree.depth(8);
+console.log(newTree.depth(19))
+newTree.levelOrder();
