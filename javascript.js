@@ -37,6 +37,23 @@ function mergeSides(leftHalf, rightHalf) {
     return merged;
 };
 
+//remove doubles
+
+function removeDoubles(array) {
+    let numberA = 0;
+    let numberB = 1;
+
+    while (numberB < array.length) {
+        if (array[numberA] === array[numberB]) {
+            array.splice(numberB, 1);
+        } else {
+            numberA++;
+            numberB++;
+        };
+    }
+    return array
+}
+
 //create the tree from the sorted array
 
 class Node {
@@ -50,7 +67,8 @@ class Node {
 class Tree {
     constructor(array) {
         this.sortedArray = mergeSort(array);
-        this.root = this.buildTree(this.sortedArray);//return value from buildTree;
+        this.doublesRemoved = removeDoubles(this.sortedArray);
+        this.root = this.buildTree(this.doublesRemoved);//return value from buildTree;
     }
 
     buildTree(sortedArray) {
@@ -72,16 +90,19 @@ class Tree {
     insert(value) {
         let newNode = new Node(value)
         let currentNode = this.root;
+        if (this.find(value)) return;
 
-        while (currentNode.leftChild !== null || currentNode.rightChild !== null) {
+        while (currentNode.leftChild || currentNode.rightChild) {
             if (currentNode.data === value) return;
-            if (currentNode.data > value) {
+            if (currentNode.data > value && currentNode.leftChild) {
                 currentNode = currentNode.leftChild;
-            } else {
+            } else if (currentNode.data < value && currentNode.rightChild) {
                 currentNode = currentNode.rightChild;
+            } else {
+                break;
             }
-        }
-        if (currentNode.value > value) {
+        };
+        if (currentNode.data > value) {
             currentNode.leftChild = newNode;
         } else {
             currentNode.rightChild = newNode;
@@ -103,11 +124,11 @@ class Tree {
             if (parentNode.rightChild.data === value) {
                 parentNode.rightChild = null
             }
-        };
+        }
 
         //if 2 child nodes... !!needs work to delete root node(there will be no parent node)
         
-        if (currentNode.leftChild !== null && currentNode.rightChild !== null) {
+        else if (currentNode.leftChild !== null && currentNode.rightChild !== null) {
             let nextHeighest = currentNode.rightChild;
             while (nextHeighest.leftChild !== null) {
                 nextHeighest = nextHeighest.leftChild;
@@ -123,11 +144,11 @@ class Tree {
             } else {
                 parentNode.leftChild = nextHeighest;
             }
-        };
+        }
 
         //if one child node...
 
-        if (currentNode.leftChild === null || currentNode.rightChild === null) {
+        else if (currentNode.leftChild === null || currentNode.rightChild === null) {
             if (parentNode.rightChild === currentNode) {
                 if (currentNode.rightChild === null) {
                     parentNode.rightChild = currentNode.leftChild;
@@ -175,32 +196,27 @@ class Tree {
         return parentNode;
     };
 
-    levelOrder() {
-        if (this.root === null) return;
+    levelOrder(currentNode = this.root) {
+        if (!currentNode) return;
 
-        let levelOrderQueue = [];
-        let currentNode = this.root;
-        let queuePosition = 0
+        let levelOrderQueue = [currentNode];
+        let result = []
 
-        levelOrderQueue.push(currentNode.data)
-
-        while (queuePosition < levelOrderQueue.length) {
-            if (currentNode == undefined) {
-                queuePosition++;
-                currentNode = this.find(levelOrderQueue[queuePosition]);
-            } else {
-                if (currentNode.leftChild !== null) {
-                    levelOrderQueue.push(currentNode.leftChild.data);
-                };
-                if (currentNode.rightChild !== null) {
-                    levelOrderQueue.push(currentNode.rightChild.data);
-                };
-                queuePosition++
-                currentNode = this.find(levelOrderQueue[queuePosition])
+        while (levelOrderQueue.length > 0) {
+            result.push(currentNode.data);
+            levelOrderQueue.splice(0, 1);
+            if (currentNode.leftChild) {
+                levelOrderQueue.push(currentNode.leftChild);
             }
-        }
-        console.log(levelOrderQueue);
-        return levelOrderQueue;
+            if (currentNode.rightChild) {
+                levelOrderQueue.push(currentNode.rightChild);
+            }
+            currentNode = levelOrderQueue[0];
+        };
+        console.log(result)
+
+        //find node in queue postion 0, add its children to the list, move forward one position
+        //if no children, return
     };
 
     inOrder(current = this.root, inOrderList = []) {
@@ -233,13 +249,12 @@ class Tree {
         return postOrderList;
     };
 
-    height(givenNumber) {
-        let node = this.find(givenNumber);
-        if (!node) return;
-        if(node) {
+    height(node = this.root) {
+        if (node === null) return -1;
 
-        }
-        console.log(node)
+        const leftHeight = this.height(node.leftChild);
+        const rightHeight = this.height(node.rightChild);
+        return Math.max(leftHeight, rightHeight) +1;
     };
 
     depth(givenNumber) {
@@ -251,12 +266,36 @@ class Tree {
                 node = this.findParent(node.data)
                 nodeDepth++
             }
+            console.log(nodeDepth)
             return nodeDepth
         }
     };
 
     isBalanced() {
+        if (this.checkBalanced() !== -1) {
+            console.log('Balanced')
+        } else {
+            console.log('Not Balanced!')
+        }
+    };
+
+    checkBalanced(node = this.root) {
         //check if the tree is balanced (difference in height of left and right subtrees shouldnt be more then 1)
+        if (!node) return 0;
+        const leftBalance = this.checkBalanced(node.leftChild);
+        const rightBalance = this.checkBalanced(node.rightChild);
+        const difference = Math.abs(leftBalance - rightBalance);
+
+        if (leftBalance === -1 || rightBalance === -1 || difference > 1) {
+            return -1;
+        } else {
+            return Math.max(leftBalance,rightBalance) +1;
+        }
+    };
+
+    rebalance() {
+        let newArray = this.inOrder();
+        this.root = this.buildTree(newArray);
     }
 
     prettyPrint(node = this.root, prefix = "", isLeft = true) {
@@ -270,14 +309,29 @@ class Tree {
         if (node.leftChild !== null) {
           this.prettyPrint(node.leftChild, `${prefix}${isLeft ? "    " : "│   "}`, true);
         }
-      };
+    };
+    
 };
 
-let testArray = [4, 43, 19, 14, 2, 6, 8, 11, 44, 52, 54, 23, 76, 100, 101];
+const randomArray = (size) => {
+    return Array.from({ length: size}, () => Math.floor(Math.random() * 100));
+}
 
-let newTree = new Tree(testArray);
-newTree.prettyPrint();
-console.log(newTree.inOrder())
-newTree.depth(8);
-console.log(newTree.depth(19))
+let newTree = new Tree(randomArray(16));
+
+newTree.isBalanced();
 newTree.levelOrder();
+console.log(newTree.preOrder());
+console.log(newTree.postOrder());
+console.log(newTree.inOrder());
+newTree.insert(144);
+newTree.insert(154);
+newTree.insert(110);
+newTree.insert(155);
+newTree.isBalanced()
+newTree.rebalance();
+newTree.isBalanced();
+newTree.levelOrder();
+console.log(newTree.preOrder());
+console.log(newTree.postOrder());
+console.log(newTree.inOrder());
